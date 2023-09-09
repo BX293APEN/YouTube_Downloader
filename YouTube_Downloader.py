@@ -1,4 +1,5 @@
-import youtube_dl, os, sys, tkinter, threading, time
+import youtube_dl, os, tkinter, time
+# import threading
 
 desktopPath = os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop')
 dire = os.getcwd().replace(os.path.sep, '/')
