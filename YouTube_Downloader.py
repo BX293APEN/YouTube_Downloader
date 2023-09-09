@@ -45,6 +45,8 @@ class YoutubeDLG():
     def update_string(self):
         self.statusLabel["text"] = Data.status
         self.body.title(Data.title)
+        
+        # マルチスレッドで動かしても正常終了出来るようにする
         if Data.endFlag != 0:
             self.end()
         else:
@@ -61,8 +63,7 @@ class YoutubeDLG():
     def download(self, event):
         self.dl_movie()
     
-    def right_click_menu(self, event):
-        #右クリック設定
+    def right_click_menu(self, event): #右クリック設定
         name = eval("self." + str(event.widget.extra)) # extraの値取得
         rightMenu = tkinter.Menu(name, tearoff=0, font=("HGPｺﾞｼｯｸE", 10))
         rightMenu.add_command(label="コピー",command = lambda:self.copy_text(name))
@@ -73,7 +74,7 @@ class YoutubeDLG():
     def copy_text(self, widgetName):
         try:
             widgetName.clipboard_clear()
-            #if widgetName == self.textarea:
+            #if widgetName == self.textarea: # テキストエリアを使う場合の動作
             #    copyTxt = widgetName.get(tkinter.SEL_FIRST, tkinter.SEL_LAST)
             #else:
             copyTxt = widgetName.selection_get()
