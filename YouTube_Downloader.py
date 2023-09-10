@@ -47,7 +47,14 @@ class YoutubeDLG():
         self.inputURL.bind("<Return>", self.download)
         
         # テキストエリア
-        self.consoleText = scrolledtext.ScrolledText(self.body, font=("HGPｺﾞｼｯｸE", 10), height= 40, width = 110, background = bgColor, foreground= fgColor)
+        self.consoleText = scrolledtext.ScrolledText(self.body,
+                                                     font=("HGPｺﾞｼｯｸE", 10),
+                                                     height= int((sizeHeight - 80) / 13),
+                                                     width = int((sizeWidth - 10) / 7) - 2,
+                                                     background = bgColor,
+                                                     foreground= fgColor,
+                                                     insertbackground = fgColor,
+                                                    )
         self.consoleText.extra = "consoleText" # extraで変数名を登録
         self.consoleText.place(x = 10, y = 80)
         self.consoleText.bind("<Button-3>", self.right_click_menu)#右クリックが押されたら
@@ -63,6 +70,7 @@ class YoutubeDLG():
                 consoleData = consoleDisp.read()
                 self.consoleText.delete("1.0", "end")
                 self.consoleText.insert("end", consoleData)
+                self.consoleText.see('end')
             
         # マルチスレッドで動かしても正常終了出来るようにする
         if Data.endFlag != 0:
