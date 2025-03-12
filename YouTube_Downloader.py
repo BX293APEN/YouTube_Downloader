@@ -1,20 +1,16 @@
-import youtube_dl, os, tkinter, time, sys, threading
+import os, tkinter, time, sys, threading, re
 from tkinter import scrolledtext
+from yt_dlp import YoutubeDL
 
 desktopPath = os.path.join(os.path.join(os.environ["USERPROFILE"]), "Desktop")
 dire = os.getcwd().replace(os.path.sep, "/")
-
-with open(str(dire) + "/account") as accountFile:
-    accountData = accountFile.read().split("\n")
-    myEmail = accountData[0]
-    myPassword = accountData[1]
 
 class Data:
     status = "URLを入力してください"
     title = ""
     endFlag = 0
     exeFlag = 0
-    stdOutFilePath =  dire + "/tmp"
+    stdOutFilePath =  f"{dire}/tmp"
 
 class YoutubeDLG():
     def __init__(self, title = "YouTube_Downloader", sizeWidth = 800, sizeHeight = 600, bgColor = "white", fgColor = "black"):
@@ -24,9 +20,9 @@ class YoutubeDLG():
         Data.title = title
         self.body = tkinter.Tk()
         self.body.title(Data.title) # ウィンドウタイトル
-        self.body.geometry(str(sizeWidth) + "x" + str(sizeHeight)) # ウィンドウサイズ
+        self.body.geometry(f"{str(sizeWidth)}x{str(sizeHeight)}") # ウィンドウサイズ
         self.body.configure(background = bgColor)
-        self.body.iconbitmap(dire + "/YouTube.ico")
+        self.body.iconbitmap(f"{dire}/YouTube.ico")
         self.body.resizable(0,0)
         
         #ボタン
@@ -47,14 +43,15 @@ class YoutubeDLG():
         self.inputURL.bind("<Return>", self.download)
         
         # テキストエリア
-        self.consoleText = scrolledtext.ScrolledText(self.body,
-                                                     font=("HGPｺﾞｼｯｸE", 10),
-                                                     height= int((sizeHeight - 80) / 13),
-                                                     width = int((sizeWidth - 10) / 7) - 2,
-                                                     background = bgColor,
-                                                     foreground= fgColor,
-                                                     insertbackground = fgColor,
-                                                    )
+        self.consoleText = scrolledtext.ScrolledText(
+            self.body,
+            font=("HGPｺﾞｼｯｸE", 10),
+            height= int((sizeHeight - 80) / 13),
+            width = int((sizeWidth - 10) / 7) - 2,
+            background = bgColor,
+            foreground= fgColor,
+            insertbackground = fgColor,
+        )
         self.consoleText.extra = "consoleText" # extraで変数名を登録
         self.consoleText.place(x = 10, y = 80)
         self.consoleText.bind("<Button-3>", self.right_click_menu)#右クリックが押されたら
@@ -81,7 +78,15 @@ class YoutubeDLG():
     
     def dl_movie(self):
         url = self.inputURL.get()
-        downloadThread = threading.Thread(target = download_youtube, kwargs = { "arrayURL" : [str(url)], })
+        #url = url.replace("x.com", "twitter.com")
+        downloadThread = threading.Thread(
+            target = download_youtube, 
+            kwargs = { 
+                "arrayURL" : [str(url)],
+                "fileName"  : "%(id)s",
+            }
+        )
+        
         downloadThread.start()
         self.inputURL.delete(0, tkinter.END)
     
@@ -89,7 +94,7 @@ class YoutubeDLG():
         self.dl_movie()
     
     def right_click_menu(self, event): #右クリック設定
-        name = eval("self." + str(event.widget.extra)) # extraの値取得
+        name = eval(f"self.{str(event.widget.extra)}") # extraの値取得
         rightMenu = tkinter.Menu(name, tearoff=0, font=("HGPｺﾞｼｯｸE", 10))
         rightMenu.add_command(label="コピー",command = lambda:self.copy_text(name))
         rightMenu.add_separator()
@@ -104,7 +109,7 @@ class YoutubeDLG():
             else:
                 copyTxt = widgetName.selection_get()
             widgetName.clipboard_append(copyTxt)
-            Data.status = "コピー : " + copyTxt
+            Data.status = f"コピー : {copyTxt}"
             
         except:
             Data.status = "コピー出来ませんでした"
@@ -114,7 +119,7 @@ class YoutubeDLG():
         try:
             pasteTxt = widgetName.clipboard_get()
             widgetName.insert(tkinter.INSERT, pasteTxt)
-            Data.status = "貼り付け : " + pasteTxt
+            Data.status = f"貼り付け : {pasteTxt}"
         except:
             Data.status = "貼り付け出来ませんでした"
     
@@ -122,14 +127,17 @@ class YoutubeDLG():
         self.body.destroy()
         
 
-def download_youtube(arrayURL = [], dir = str(desktopPath), fileName = "%(title)s", email = myEmail, password = myPassword ):
+def download_youtube(arrayURL = [], dir = str(desktopPath), fileName = "%(title)s"):
+    movieName = str(re.sub(r"\\|\=|\?|\.|\:|\+|\*|\"|\!|\<|\>|\||/|@|：|／|　", "", fileName))[:20]
     downloadOption = {
-        "outtmpl" : dir + "/" + fileName + ".%(ext)s",
+        "outtmpl" : f"{dir}/{movieName}.%(ext)s",
+        "title": movieName,
         "format" : "bestvideo+bestaudio/best",
-        "username": email,
-        "password": password,
+        "cookiesfrombrowser" : ('firefox', None, None, None),
         "verbose" : True,
         "download" : True,
+        "windowsfilenames" : True,
+        "trim_file_name" : 60,
     }
     
     try:
@@ -137,7 +145,7 @@ def download_youtube(arrayURL = [], dir = str(desktopPath), fileName = "%(title)
         errorFlag = 0
         Data.status = "ダウンロード中"
         with ChangeStdOut(mode = "w"):
-            with youtube_dl.YoutubeDL(downloadOption) as ydl:
+            with YoutubeDL(downloadOption) as ydl:
                 ydl.download(arrayURL)
             
     except Exception as errorText:
@@ -153,7 +161,7 @@ def download_youtube(arrayURL = [], dir = str(desktopPath), fileName = "%(title)
             Data.status = "ダウンロード終了"
 
 class ChangeStdOut(): # __enter__と__exit__でブロック構文利用可能
-    def __init__(self, filename = dire + "/tmp", mode = "a"):
+    def __init__(self, filename = f"{dire}/tmp", mode = "a"):
         Data.stdOutFilePath = filename
         self.mode = mode
 
